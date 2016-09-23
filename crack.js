@@ -20,7 +20,6 @@ function(context, args)
 	// If we had a match on the regex, store the lock type for later use
 	//
 	if (match && match.length) {
-		// tell("Found lock type: " + lock_type);
 		lock_type = match[1];
 		
 	}
@@ -40,6 +39,11 @@ function(context, args)
 		case /EZ_21/.test(lock_type):
 			breakEz21();
 			break;
+			
+		case /EZ_35/.test(lock_type):
+			breakEz35();
+			break;
+			
 		default:
 			tell("Invalid lock type: " + lock_type + "!");
 			return { ok:false };
@@ -52,9 +56,25 @@ function(context, args)
 	// Attempt to break an EZ_21 lock
 	//
 	function breakEz21() {
-		// tell("Breaking EZ_21 lock...");
 		t = { ez_21:"" };
-		getUnlockString("ez_21");
+		lock_args.ez_21 = getUnlockString("ez_21");
+	}
+	
+	//
+	// Attempt to break an EZ_35 lock
+	//
+	function breakEz35() {
+		t = { ez_35:"" };
+		lock_args.ez_35 = getUnlockString("ez_35");
+		
+		//
+		// Once we've found the unlock string, get the digit as well
+		//
+		for (var i = 0; i < 10; i++) {
+			if (! /LOCK_ERROR.*correct digit/.test(args.npc.call({ ez_35: lock_args.ez_35, digit: i }).replace("\n", ""))) {
+				lock_args.digit = i;
+			}
+		}
 	}
 	
 	//
@@ -66,9 +86,8 @@ function(context, args)
 		//
 		for (var i = 0; i < unlock.length; i++) {
 			t[key] = unlock[i];
-			if (! /LOCK_ERROR/m.test(args.npc.call(t))) {
-				// tell(unlock[i]);
-				lock_args[key] = unlock[i];
+			if (! /LOCK_ERROR.*correct unlock/.test(args.npc.call(t).replace("\n", ""))) {
+				return unlock[i];
 			}
 		}		
 	}
